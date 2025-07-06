@@ -1,0 +1,9 @@
+Flask==3.0.3
+numpy>=1.26
+pandas>=2.2
+librosa==0.10.2
+soundfile>=0.12      # backend de librosa
+scikit-learn>=1.5
+joblib>=1.4
+pydub>=0.25          # para eventual conversión webm→wav (requiere ffmpeg instalado)
+ffmpeg-python>=0.2
