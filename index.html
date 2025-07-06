@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Clasificador de COVID-19 por Voz</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/modern-normalize/modern-normalize.min.css">
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      margin: 0;
+      padding: 2rem 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .container {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      border-radius: 20px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+      padding: 2rem;
+      max-width: 500px;
+      width: 100%;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    
+    .header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+    
+    .header h1 {
+      color: #2d3748;
+      font-size: 2rem;
+      font-weight: 700;
+      margin: 0 0 0.5rem 0;
+    }
+    
+    .header p {
+      color: #718096;
+      font-size: 1rem;
+      margin: 0;
+    }
+    
+    .step {
+      margin-bottom: 2rem;
+      padding: 1.5rem;
+      background: rgba(255, 255, 255, 0.6);
+      border-radius: 15px;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+    
+    .step-title {
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: #2d3748;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    
+    .step-number {
+      background: #667eea;
+      color: white;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+    
+    .gender-selection {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+    
+    .gender-option {
+      position: relative;
+    }
+    
+    .gender-option input[type="radio"] {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+    }
+    
+    .gender-label {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 1rem;
+      border: 2px solid #e2e8f0;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      background: white;
+    }
+    
+    .gender-label:hover {
+      border-color: #667eea;
+      transform: translateY(-2px);
+    }
+    
+    .gender-option input[type="radio"]:checked + .gender-label {
+      border-color: #667eea;
+      background: #667eea;
+      color: white;
+    }
+    
+    .gender-icon {
+      font-size: 2rem;
+      margin-bottom: 0.5rem;
+    }
+    
+    .audio-controls {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+    
+    .record-section {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+    
+    .record-buttons {
+      display: flex;
+      gap: 1rem;
+    }
+    
+    .btn {
+      padding: 0.8rem 1.5rem;
+      border: none;
+      border-radius: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-size: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      justify-content: center;
+    }
+    
+    .btn-primary {
+      background: #667eea;
+      color: white;
+    }
+    
+    .btn-primary:hover:not(:disabled) {
+      background: #5a67d8;
+      transform: translateY(-1px);
+    }
+    
+    .btn-secondary {
+      background: #e53e3e;
+      color: white;
+    }
+    
+    .btn-secondary:hover:not(:disabled) {
+      background: #c53030;
+      transform: translateY(-1px);
+    }
+    
+    .btn-success {
+      background: #38a169;
+      color: white;
+      width: 100%;
+      font-size: 1.1rem;
+      padding: 1rem;
+    }
+    
+    .btn-success:hover:not(:disabled) {
+      background: #2f855a;
+      transform: translateY(-1px);
+    }
+    
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none !important;
+    }
+    
+    .file-input-wrapper {
+      position: relative;
+      display: inline-block;
+      width: 100%;
+    }
+    
+    .file-input {
+      position: absolute;
+      opacity: 0;
+      width: 100%;
+      height: 100%;
+      cursor: pointer;
+    }
+    
+    .file-input-label {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      padding: 1rem;
+      border: 2px dashed #cbd5e0;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      background: white;
+    }
+    
+    .file-input-label:hover {
+      border-color: #667eea;
+      background: #f7fafc;
+    }
+    
+    .file-input:focus + .file-input-label {
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+    
+    .divider {
+      text-align: center;
+      margin: 1rem 0;
+      position: relative;
+      color: #718096;
+    }
+    
+    .divider::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: #e2e8f0;
+      z-index: 1;
+    }
+    
+    .divider span {
+      background: rgba(255, 255, 255, 0.6);
+      padding: 0 1rem;
+      position: relative;
+      z-index: 2;
+    }
+    
+    .progress-container {
+      margin: 1rem 0;
+    }
+    
+    .progress-bar {
+      width: 100%;
+      height: 8px;
+      background: #e2e8f0;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #667eea, #764ba2);
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+    
+    .result-container {
+      margin-top: 2rem;
+      padding: 1.5rem;
+      border-radius: 15px;
+      text-align: center;
+      display: none;
+    }
+    
+    .result-positive {
+      background: linear-gradient(135deg, #fc8181, #f56565);
+      color: white;
+    }
+    
+    .result-negative {
+      background: linear-gradient(135deg, #68d391, #48bb78);
+      color: white;
+    }
+    
+    .result-icon {
+      font-size: 3rem;
+      margin-bottom: 1rem;
+    }
+    
+    .result-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+    
+    .result-description {
+      font-size: 1rem;
+      opacity: 0.9;
+      margin-bottom: 1rem;
+    }
+    
+    .result-details {
+      background: rgba(255, 255, 255, 0.2);
+      padding: 1rem;
+      border-radius: 10px;
+      margin-top: 1rem;
+    }
+    
+    .result-confidence {
+      font-size: 1.1rem;
+      font-weight: 600;
+    }
+    
+    .recording-indicator {
+      display: none;
+      align-items: center;
+      gap: 0.5rem;
+      color: #e53e3e;
+      font-weight: 600;
+      margin-top: 1rem;
+    }
+    
+    .recording-dot {
+      width: 8px;
+      height: 8px;
+      background: #e53e3e;
+      border-radius: 50%;
+      animation: pulse 1s infinite;
+    }
+    
+    @keyframes pulse {
+      0% { opacity: 1; }
+      50% { opacity: 0.3; }
+      100% { opacity: 1; }
+    }
+    
+    .file-selected {
+      background: #f0fff4;
+      border-color: #38a169;
+      color: #2f855a;
+    }
+    
+    @media (max-width: 480px) {
+      body {
+        padding: 1rem;
+      }
+      
+      .container {
+        padding: 1.5rem;
+      }
+      
+      .gender-selection {
+        grid-template-columns: 1fr;
+      }
+      
+      .record-buttons {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🩺 Detección COVID-19</h1>
+      <p>Análisis de voz con inteligencia artificial</p>
+    </div>
+    
+    <form id="audioForm">
+      <!-- Paso 1: Selección de sexo -->
+      <div class="step">
+        <div class="step-title">
+          <div class="step-number">1</div>
+          Selecciona tu sexo
+        </div>
+        <div class="gender-selection">
+          <div class="gender-option">
+            <input type="radio" id="male" name="sex" value="0" required>
+            <label for="male" class="gender-label">
+              <div class="gender-icon">👨</div>
+              <span>Masculino</span>
+            </label>
+          </div>
+          <div class="gender-option">
+            <input type="radio" id="female" name="sex" value="1" required>
+            <label for="female" class="gender-label">
+              <div class="gender-icon">👩</div>
+              <span>Femenino</span>
+            </label>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Paso 2: Audio -->
+      <div class="step">
+        <div class="step-title">
+          <div class="step-number">2</div>
+          Proporciona tu muestra de voz
+        </div>
+        
+        <div class="audio-controls">
+          <div class="record-section">
+            <div class="record-buttons">
+              <button type="button" id="btnRecord" class="btn btn-primary">
+                🎙️ Grabar
+              </button>
+              <button type="button" id="btnStop" class="btn btn-secondary" disabled>
+                ⏹️ Detener
+              </button>
+            </div>
+            <div class="recording-indicator" id="recordingIndicator">
+              <div class="recording-dot"></div>
+              <span>Grabando...</span>
+            </div>
+          </div>
+          
+          <div class="divider">
+            <span>o</span>
+          </div>
+          
+          <div class="file-input-wrapper">
+            <input type="file" id="fileInput" class="file-input" accept=".wav,.mp3,.flac,.m4a,.ogg,.webm">
+            <label for="fileInput" class="file-input-label" id="fileInputLabel">
+              📁 Seleccionar archivo de audio
+            </label>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Paso 3: Análisis -->
+      <div class="step">
+        <div class="step-title">
+          <div class="step-number">3</div>
+          Análisis
+        </div>
+        <button type="submit" class="btn btn-success">
+          🚀 Analizar muestra
+        </button>
+        
+        <div class="progress-container" id="progressContainer" style="display: none;">
+          <div class="progress-bar">
+            <div class="progress-fill" id="progressFill"></div>
+          </div>
+          <div style="text-align: center; margin-top: 0.5rem; color: #718096;">
+            Procesando audio...
+          </div>
+        </div>
+      </div>
+    </form>
+    
+    <!-- Resultado -->
+    <div class="result-container" id="resultContainer">
+      <div class="result-icon" id="resultIcon"></div>
+      <div class="result-title" id="resultTitle"></div>
+      <div class="result-description" id="resultDescription"></div>
+      <div class="result-details">
+        <div class="result-confidence" id="resultConfidence"></div>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    // Variables globales
+    let mediaRecorder;
+    let audioChunks = [];
+    let recordedBlob;
+    
+    // Elementos del DOM
+    const form = document.getElementById('audioForm');
+    const btnRecord = document.getElementById('btnRecord');
+    const btnStop = document.getElementById('btnStop');
+    const fileInput = document.getElementById('fileInput');
+    const fileInputLabel = document.getElementById('fileInputLabel');
+    const recordingIndicator = document.getElementById('recordingIndicator');
+    const progressContainer = document.getElementById('progressContainer');
+    const progressFill = document.getElementById('progressFill');
+    const resultContainer = document.getElementById('resultContainer');
+    const resultIcon = document.getElementById('resultIcon');
+    const resultTitle = document.getElementById('resultTitle');
+    const resultDescription = document.getElementById('resultDescription');
+    const resultConfidence = document.getElementById('resultConfidence');
+    
+    // Inicializar funcionalidad de grabación
+    async function initRecording() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        
+        // Configurar MediaRecorder con formato compatible
+        const options = { mimeType: 'audio/webm' };
+        if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+          options.mimeType = 'audio/wav';
+        }
+        
+        mediaRecorder = new MediaRecorder(stream, options);
+        
+        mediaRecorder.ondataavailable = (event) => {
+          if (event.data.size > 0) {
+            audioChunks.push(event.data);
+          }
+        };
+        
+        mediaRecorder.onstop = () => {
+          const mimeType = mediaRecorder.mimeType || 'audio/webm';
+          recordedBlob = new Blob(audioChunks, { type: mimeType });
+          audioChunks = [];
+          
+          console.log('🎤 Grabación completada:', {
+            size: recordedBlob.size,
+            type: recordedBlob.type
+          });
+          
+          // Limpiar selección de archivo si se grabó
+          fileInput.value = '';
+          updateFileInputLabel();
+        };
+        
+        return true;
+      } catch (error) {
+        console.error('Error al acceder al micrófono:', error);
+        alert('No se pudo acceder al micrófono. Por favor, sube un archivo de audio.');
+        return false;
+      }
+    }
+    
+    // Eventos de grabación
+    btnRecord.addEventListener('click', async () => {
+      if (!mediaRecorder) {
+        const initialized = await initRecording();
+        if (!initialized) return;
+      }
+      
+      audioChunks = [];
+      mediaRecorder.start();
+      
+      btnRecord.disabled = true;
+      btnStop.disabled = false;
+      recordingIndicator.style.display = 'flex';
+    });
+    
+    btnStop.addEventListener('click', () => {
+      if (mediaRecorder && mediaRecorder.state === 'recording') {
+        mediaRecorder.stop();
+      }
+      
+      btnRecord.disabled = false;
+      btnStop.disabled = true;
+      recordingIndicator.style.display = 'none';
+    });
+    
+    // Actualizar etiqueta del input de archivo
+    function updateFileInputLabel() {
+      if (fileInput.files.length > 0) {
+        const fileName = fileInput.files[0].name;
+        fileInputLabel.textContent = `📁 ${fileName}`;
+        fileInputLabel.classList.add('file-selected');
+        
+        // Limpiar grabación si se selecciona archivo
+        recordedBlob = null;
+      } else {
+        fileInputLabel.textContent = '📁 Seleccionar archivo de audio';
+        fileInputLabel.classList.remove('file-selected');
+      }
+    }
+    
+    fileInput.addEventListener('change', updateFileInputLabel);
+    
+    // Mostrar resultado
+    function showResult(data) {
+      const hasCovidProbability = data.final_label === "1";
+      
+      resultContainer.style.display = 'block';
+      resultContainer.className = hasCovidProbability ? 'result-container result-positive' : 'result-container result-negative';
+      
+      if (hasCovidProbability) {
+        resultIcon.textContent = '⚠️';
+        resultTitle.textContent = 'Posible COVID-19 detectado';
+        resultDescription.textContent = 'El análisis sugiere la presencia de indicadores de COVID-19 en tu voz. Te recomendamos consultar con un profesional médico.';
+      } else {
+        resultIcon.textContent = '✅';
+        resultTitle.textContent = 'No se detectó COVID-19';
+        resultDescription.textContent = 'El análisis no encontró indicadores de COVID-19 en tu voz. Recuerda que este es solo un análisis preliminar.';
+      }
+      
+      resultConfidence.textContent = `Confianza: ${data.confidence_pct}%`;
+      
+      // Scroll suave al resultado
+      resultContainer.scrollIntoView({ behavior: 'smooth' });
+    }
+    
+    // Simular progreso
+    function simulateProgress() {
+      let progress = 0;
+      const interval = setInterval(() => {
+        progress += Math.random() * 15;
+        if (progress > 90) progress = 90;
+        
+        progressFill.style.width = `${progress}%`;
+        
+        if (progress >= 90) {
+          clearInterval(interval);
+        }
+      }, 200);
+      
+      return interval;
+    }
+    
+    // Envío del formulario
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const formData = new FormData(form);
+      
+      // Verificar que se haya seleccionado audio
+      if (!recordedBlob && !fileInput.files.length) {
+        alert('Por favor, graba un audio o selecciona un archivo.');
+        return;
+      }
+      
+      // Agregar archivo de audio al FormData (usando 'audiofile' como espera el servidor)
+      if (recordedBlob) {
+        // Crear un archivo con nombre y extensión apropiados
+        const fileName = recordedBlob.type.includes('webm') ? 'grabacion.webm' : 'grabacion.wav';
+        const audioFile = new File([recordedBlob], fileName, { type: recordedBlob.type });
+        
+        console.log('📤 Enviando grabación:', {
+          name: audioFile.name,
+          size: audioFile.size,
+          type: audioFile.type
+        });
+        
+        formData.append('audiofile', audioFile);
+      } else if (fileInput.files.length) {
+        console.log('📤 Enviando archivo:', {
+          name: fileInput.files[0].name,
+          size: fileInput.files[0].size,
+          type: fileInput.files[0].type
+        });
+        
+        formData.append('audiofile', fileInput.files[0]);
+      }
+      
+      // Mostrar progreso
+      resultContainer.style.display = 'none';
+      progressContainer.style.display = 'block';
+      const progressInterval = simulateProgress();
+      
+      try {
+        // Detectar la URL base correcta
+        const baseUrl = window.location.origin || 'http://localhost:5000';
+        const uploadUrl = `${baseUrl}/upload`; // Usar el endpoint correcto
+        
+        console.log('Enviando petición a:', uploadUrl);
+        
+        const response = await fetch(uploadUrl, {
+          method: 'POST',
+          body: formData
+        });
+        
+        console.log('Respuesta del servidor:', response.status, response.statusText);
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('Error del servidor:', errorText);
+          throw new Error(`Error del servidor: ${response.status} - ${errorText}`);
+        }
+        
+        const data = await response.json();
+        console.log('Datos recibidos:', data);
+        
+        // Completar progreso
+        clearInterval(progressInterval);
+        progressFill.style.width = '100%';
+        
+        // Mostrar resultado después de una breve pausa
+        setTimeout(() => {
+          progressContainer.style.display = 'none';
+          showResult(data);
+        }, 500);
+        
+      } catch (error) {
+        console.error('Error completo:', error);
+        
+        // Ocultar progreso
+        clearInterval(progressInterval);
+        progressContainer.style.display = 'none';
+        
+        // Mostrar error más detallado
+        const errorMessage = error.message || 'Error desconocido';
+        alert(`Error al procesar el audio: ${errorMessage}\n\nRevisa la consola del navegador para más detalles (F12).`);
+      }
+    });
+    
+    // Inicializar
+    document.addEventListener('DOMContentLoaded', () => {
+      // Ocultar resultado inicial
+      resultContainer.style.display = 'none';
+    });
+  </script>
+</body>
+</html>
